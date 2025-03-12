@@ -9,4 +9,4 @@
 [submodule "teleop_tools"]
 	path = teleop_tools
 	url = https://github.com/f1tenth/teleop_tools.git
-	branch = foxy-devel
+	branch = humble-devel

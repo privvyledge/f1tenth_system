@@ -79,6 +79,8 @@ class ThrottleInterpolator(Node):
             self._process_servo_command,
             1)
 
+        # Converts max_servo_speed (rad/s steering angle) → max servo position change per timer tick.
+        # Units: (servo_units/rad) * (rad/s) / (ticks/s) = servo_units/tick
         self.max_delta_servo = abs(self.steering_angle_to_servo_gain * self.max_servo_speed / self.servo_smoother_rate)
         self.servo_timer = self.create_timer(1.0/self.servo_smoother_rate, self._publish_servo_command)
 
@@ -86,7 +88,7 @@ class ThrottleInterpolator(Node):
         self.rmp_timer = self.create_timer(1.0/self.throttle_smoother_rate, self._publish_throttle_command)
 
     def _publish_throttle_command(self):
-        desired_delta = self.desired_rpm-self.last_rpm
+        desired_delta = self.desired_rpm - self.last_rpm
         clipped_delta = max(min(desired_delta, self.max_delta_rpm), -self.max_delta_rpm)
         smoothed_rpm = self.last_rpm + clipped_delta
         self.last_rpm = smoothed_rpm
@@ -101,7 +103,7 @@ class ThrottleInterpolator(Node):
         self.desired_rpm = input_rpm
 
     def _publish_servo_command(self):
-        desired_delta = self.desired_servo_position-self.last_servo
+        desired_delta = self.desired_servo_position - self.last_servo
         clipped_delta = max(min(desired_delta, self.max_delta_servo), -self.max_delta_servo)
         smoothed_servo = self.last_servo + clipped_delta
         self.last_servo = smoothed_servo

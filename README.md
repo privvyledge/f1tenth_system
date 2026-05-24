@@ -113,6 +113,19 @@ On Logitech F-710 joysticks, the LB button is the deadman's switch for teleop, a
    - servo_max
    - servo_min
    - steering_angle_to_servo_offset
+
+**Parameter derivation notes:**
+
+- `max_servo_speed` is the **steering angle rate at the wheels** (rad/s), not the servo shaft speed. The node converts it to servo position units per tick using `steering_angle_to_servo_gain`:
+  ```
+  max_delta_servo = |steering_angle_to_servo_gain (servo_units/rad)| × max_servo_speed (rad/s) / servo_smoother_rate (Hz)
+  ```
+  For the Traxxas 4-Tec: servo spec is 0.17 s/60° → 352.94°/s = 6.16 rad/s at the servo shaft. The steering linkage reduces this by ~1.9:1 (estimated from `steering_angle_to_servo_gain = -1.2135` assuming ~90° servo shaft travel for the normalized 0–1 range), yielding ~3.2 rad/s at the wheels. The configured value is therefore near the physical ceiling.
+
+- `max_acceleration` is in m/s². It is converted to max ERPM change per tick using `speed_to_erpm_gain`:
+  ```
+  max_delta_rpm = speed_to_erpm_gain (ERPM·s/m) × max_acceleration (m/s²) / throttle_smoother_rate (Hz)
+  ```
 2. Publishes to:
    - topic described in rpm_output_topic
    - topic described in servo_output_topic

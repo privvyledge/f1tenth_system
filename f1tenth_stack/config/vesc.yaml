@@ -52,5 +52,10 @@ throttle_interpolator:
     max_acceleration: 2.5 # meters/second^2
     throttle_smoother_rate: 75.0 # messages/sec
     # servo smoother - limits rotation speed and smooths anything above limit
+    # max_servo_speed is the steering angle rate limit at the wheels (rad/s), not the servo shaft rate.
+    # Traxxas 4-Tec servo spec: 0.17 sec/60 deg → 352.94 deg/s = 6.16 rad/s at the servo shaft.
+    # The steering linkage reduces this by ~1.9:1 (estimated from steering_angle_to_servo_gain = -1.2135
+    # and ~90 deg servo shaft travel for normalized 0–1 range): 6.16 / 1.9 ≈ 3.2 rad/s at the wheels.
+    # This value is therefore near the physical ceiling, not a conservative limit.
     max_servo_speed: 3.2 # radians/second
     servo_smoother_rate: 75.0 # messages/sec

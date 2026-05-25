@@ -126,6 +126,18 @@ def generate_launch_description():
         name='static_baselink_to_laser',
         arguments=['0.27', '0.0', '0.11', '0.0', '0.0', '0.0', 'base_link', 'laser']
     )
+    ackermann_to_twist_node = Node(
+        package='f1tenth_stack',
+        executable='ackermann_to_twist',
+        name='ackermann_to_twist',
+        parameters=[{
+            'ackermann_topic': 'ackermann_cmd',
+            'twist_topic': 'cmd_vel',
+            'wheelbase': 0.256,
+            'use_stamped_subscriber': True,
+            'use_stamped_publisher': False
+        }]
+    )
 
     # finalize
     ld.add_action(joy_node)
@@ -137,5 +149,6 @@ def generate_launch_description():
     ld.add_action(urg_node)
     ld.add_action(ackermann_mux_node)
     ld.add_action(static_tf_node)
+    ld.add_action(ackermann_to_twist_node)
 
     return ld

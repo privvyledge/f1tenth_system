@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from typing import Optional
+
 import rclpy
 from rclpy.node import Node
 
@@ -65,6 +67,13 @@ class ThrottleInterpolator(Node):
         self.desired_rpm = self.last_rpm
         self.desired_servo_position = self.last_servo
 
+        self._servo_center = self.get_parameter('steering_angle_to_servo_offset').value
+        self._timeout_sec = 0.5
+        self._servo_received = False
+        self._rpm_received = False
+        self._last_servo_time: Optional[rclpy.time.Time] = None
+        self._last_rpm_time: Optional[rclpy.time.Time] = None
+
         self.rpm_output = self.create_publisher(Float64, self.rpm_output_topic, 1)
         self.servo_output = self.create_publisher(Float64, self.servo_output_topic, 1)
 
@@ -88,6 +97,12 @@ class ThrottleInterpolator(Node):
         self.rmp_timer = self.create_timer(1.0/self.throttle_smoother_rate, self._publish_throttle_command)
 
     def _publish_throttle_command(self):
+        if not self._rpm_received:
+            return
+        if self._last_rpm_time is not None:
+            elapsed = (self.get_clock().now() - self._last_rpm_time).nanoseconds * 1e-9
+            if elapsed > self._timeout_sec:
+                self.desired_rpm = 0.0
         desired_delta = self.desired_rpm - self.last_rpm
         clipped_delta = max(min(desired_delta, self.max_delta_rpm), -self.max_delta_rpm)
         smoothed_rpm = self.last_rpm + clipped_delta
@@ -95,14 +110,22 @@ class ThrottleInterpolator(Node):
         rpm_msg = Float64()
         rpm_msg.data = float(smoothed_rpm)
         self.rpm_output.publish(rpm_msg)
-            
-    def _process_throttle_command(self,msg):
+
+    def _process_throttle_command(self, msg):
+        self._rpm_received = True
+        self._last_rpm_time = self.get_clock().now()
         input_rpm = msg.data
         # Do some sanity clipping
         input_rpm = min(max(input_rpm, self.min_rpm), self.max_rpm)
         self.desired_rpm = input_rpm
 
     def _publish_servo_command(self):
+        if not self._servo_received:
+            return
+        if self._last_servo_time is not None:
+            elapsed = (self.get_clock().now() - self._last_servo_time).nanoseconds * 1e-9
+            if elapsed > self._timeout_sec:
+                self.desired_servo_position = self._servo_center
         desired_delta = self.desired_servo_position - self.last_servo
         clipped_delta = max(min(desired_delta, self.max_delta_servo), -self.max_delta_servo)
         smoothed_servo = self.last_servo + clipped_delta
@@ -111,11 +134,12 @@ class ThrottleInterpolator(Node):
         servo_msg.data = float(smoothed_servo)
         self.servo_output.publish(servo_msg)
 
-    def _process_servo_command(self,msg):
+    def _process_servo_command(self, msg):
+        self._servo_received = True
+        self._last_servo_time = self.get_clock().now()
         input_servo = msg.data
         # Do some sanity clipping
         input_servo = min(max(input_servo, self.min_servo), self.max_servo)
-        # set the target servo position
         self.desired_servo_position = input_servo
 
 def main(args=None):

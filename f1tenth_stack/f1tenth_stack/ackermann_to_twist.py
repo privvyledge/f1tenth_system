@@ -16,6 +16,8 @@ class AckermannToTwist(Node):
         self.declare_parameter('wheelbase', 0.256)  # 0.256 (Traxxas 4-Tec 2.0), 0.33 (Traxxas Slash 4x4) are standard 1/10 scale approx (meters)
         self.declare_parameter('use_stamped_subscriber', True)
         self.declare_parameter('use_stamped_publisher', True)
+        self.declare_parameter('frame_id', '')         # applied when stamp is missing or empty; or when override_header is True
+        self.declare_parameter('override_header', False)  # if True, replace stamp+frame_id even when already present
 
         # Retrieve parameters
         self.ackermann_topic = self.get_parameter('ackermann_topic').value
@@ -23,6 +25,8 @@ class AckermannToTwist(Node):
         self.wheelbase = self.get_parameter('wheelbase').value
         self.use_stamped_subscriber = self.get_parameter('use_stamped_subscriber').value
         self.use_stamped_publisher = self.get_parameter('use_stamped_publisher').value
+        self.frame_id = self.get_parameter('frame_id').value
+        self.override_header = self.get_parameter('override_header').value
 
         # Setup subscriber based on message type
         if self.use_stamped_subscriber:
@@ -55,6 +59,11 @@ class AckermannToTwist(Node):
         if self.use_stamped_publisher:
             twist_msg = TwistStamped()
             twist_msg.header = msg.header
+            if self.override_header:
+                twist_msg.header.stamp = self.get_clock().now().to_msg()
+                twist_msg.header.frame_id = self.frame_id
+            elif self.frame_id and not twist_msg.header.frame_id:
+                twist_msg.header.frame_id = self.frame_id
             twist_msg.twist = twist_base
             self.publisher.publish(twist_msg)
         else:
@@ -65,6 +74,7 @@ class AckermannToTwist(Node):
         if self.use_stamped_publisher:
             twist_msg = TwistStamped()
             twist_msg.header.stamp = self.get_clock().now().to_msg()
+            twist_msg.header.frame_id = self.frame_id
             twist_msg.twist = twist_base
             self.publisher.publish(twist_msg)
         else:

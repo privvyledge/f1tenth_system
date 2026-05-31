@@ -1,0 +1,18 @@
+command_gate:
+  ros__parameters:
+    num_channels: 2
+    require_heartbeat: true
+    heartbeat_timeout: 1.0
+    heartbeat_topic: ~/heartbeat
+    require_enable: false
+    enable_topic: ~/enable
+    channel_0:
+      input_topic: commands/motor/speed_ungated
+      output_topic: commands/motor/speed
+      message_type: std_msgs/msg/Float64
+      fallback_topic: ""
+    channel_1:
+      input_topic: commands/servo/position_ungated
+      output_topic: commands/servo/position
+      message_type: std_msgs/msg/Float64
+      fallback_topic: ""

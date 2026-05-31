@@ -51,6 +51,11 @@ def generate_launch_description():
         'config',
         'mux.yaml'
     )
+    command_gate_config = os.path.join(
+        get_package_share_directory('f1tenth_stack'),
+        'config',
+        'command_gate.yaml'
+    )
 
     joy_la = DeclareLaunchArgument(
         'joy_config',
@@ -68,8 +73,12 @@ def generate_launch_description():
         'mux_config',
         default_value=mux_config,
         description='Descriptions for ackermann mux configs')
+    command_gate_la = DeclareLaunchArgument(
+        'command_gate_config',
+        default_value=command_gate_config,
+        description='Path to command_gate config file')
 
-    ld = LaunchDescription([joy_la, vesc_la, sensors_la, mux_la])
+    ld = LaunchDescription([joy_la, vesc_la, sensors_la, mux_la, command_gate_la])
 
     joy_node = Node(
         package='joy',
@@ -87,7 +96,11 @@ def generate_launch_description():
         package='vesc_ackermann',
         executable='ackermann_to_vesc_node',
         name='ackermann_to_vesc_node',
-        parameters=[LaunchConfiguration('vesc_config')]
+        parameters=[LaunchConfiguration('vesc_config')],
+        remappings=[
+            ('commands/motor/speed', 'commands/motor/speed_ungated'),
+            ('commands/servo/position', 'commands/servo/position_ungated'),
+        ]
     )
     vesc_to_odom_node = Node(
         package='vesc_ackermann',
@@ -126,6 +139,13 @@ def generate_launch_description():
         name='static_baselink_to_laser',
         arguments=['0.27', '0.0', '0.11', '0.0', '0.0', '0.0', 'base_link', 'laser']
     )
+    command_gate_node = Node(
+        package='command_gate',
+        executable='command_gate_node',
+        name='command_gate',
+        parameters=[LaunchConfiguration('command_gate_config')],
+        output='screen',
+    )
     ackermann_to_twist_node = Node(
         package='f1tenth_stack',
         executable='ackermann_to_twist',
@@ -144,6 +164,7 @@ def generate_launch_description():
     ld.add_action(joy_teleop_node)
     ld.add_action(ackermann_to_vesc_node)
     ld.add_action(vesc_to_odom_node)
+    ld.add_action(command_gate_node)
     ld.add_action(vesc_driver_node)
     # ld.add_action(throttle_interpolator_node)
     ld.add_action(urg_node)

@@ -10,3 +10,7 @@
 	path = teleop_tools
 	url = https://github.com/f1tenth/teleop_tools.git
 	branch = humble-devel
+[submodule "command_gate"]
+	path = command_gate
+	url = https://github.com/privvyledge/autodriver_command_gate.git
+	branch = master
